@@ -15,6 +15,13 @@ const (
 )
 
 func main() {
+	dbInstance, err := NewDB(GetEnv("DB_KEY"))
+	if err != nil {
+		log.Fatalf("Error creating database instance: %v", err)
+		return
+	}
+	dbInstance.checkInitialConditions()
+
 	bot, err := tgbotapi.NewBotAPI(GetEnv("TELEGRAM_BOT_TOKEN"))
 	if err != nil {
 		log.Fatalf("Error creating bot: %v", err)
