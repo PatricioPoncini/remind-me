@@ -14,11 +14,13 @@ type DB struct {
 }
 
 type Reminder struct {
-	ID        int       `json:"id"`
-	Title     string    `json:"title"`
-	CreatedAt time.Time `json:"created_at"`
+	ID         int        `json:"id"`
+	Title      string     `json:"title"`
+	Expiration *time.Time `json:"expiration"`
+	CreatedAt  time.Time  `json:"created_at"`
 }
 
+// TODO: function to create database if not exist
 func NewDB(dataSourceName string) (*DB, error) {
 	db, err := sql.Open("mysql", dataSourceName)
 	if err != nil {
@@ -39,6 +41,7 @@ func (d *DB) checkInitialConditions() {
     CREATE TABLE IF NOT EXISTS reminders (
         id INT AUTO_INCREMENT PRIMARY KEY,
         title VARCHAR(100) NOT NULL,
+		expiration TIMESTAMP NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     `
@@ -58,4 +61,30 @@ func (d *DB) GetInstance() *sql.DB {
 
 func (d *DB) Close() error {
 	return d.instance.Close()
+}
+
+func (d *DB) InsertNewReminder(text string, timestamp time.Time) error {
+	query := "INSERT INTO reminders (title,expiration) VALUES (?,?);"
+
+	_, err := d.instance.Exec(query, text, timestamp)
+	if err != nil {
+		return fmt.Errorf("Error trying to insert new reminder: " + err.Error())
+	}
+
+	return nil
+}
+
+func (d *DB) GetReminderById(id int) (*Reminder, error) {
+	query := "SELECT id, title FROM reminders WHERE id = ?;"
+	var reminder Reminder
+
+	err := d.instance.QueryRow(query, id).Scan(&reminder.ID, &reminder.Title)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("no reminder found with id %d", id)
+		}
+		return nil, fmt.Errorf("error trying to get reminder by id: %v", err)
+	}
+
+	return &reminder, nil
 }
