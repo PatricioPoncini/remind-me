@@ -17,6 +17,7 @@ type Reminder struct {
 	ID         int        `json:"id"`
 	Title      string     `json:"title"`
 	Expiration *time.Time `json:"expiration"`
+	ChatID     int64      `json:"chat_id"`
 	CreatedAt  time.Time  `json:"created_at"`
 }
 
@@ -42,6 +43,7 @@ func (d *DB) checkInitialConditions() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         title VARCHAR(100) NOT NULL,
 		expiration TIMESTAMP NOT NULL,
+		chat_id INT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     `
@@ -63,22 +65,27 @@ func (d *DB) Close() error {
 	return d.instance.Close()
 }
 
-func (d *DB) InsertNewReminder(text string, timestamp time.Time) error {
-	query := "INSERT INTO reminders (title,expiration) VALUES (?,?);"
+func (d *DB) InsertNewReminder(text string, timestamp time.Time, chatId int64) (*Reminder, error) {
+	query := "INSERT INTO reminders (title, expiration, chat_id) VALUES (?, ?, ?);"
 
-	_, err := d.instance.Exec(query, text, timestamp)
+	result, err := d.instance.Exec(query, text, timestamp, chatId)
 	if err != nil {
-		return fmt.Errorf("Error trying to insert new reminder: " + err.Error())
+		return nil, fmt.Errorf("error trying to insert new reminder: %w", err)
 	}
 
-	return nil
+	lastInsertID, err := result.LastInsertId()
+	if err != nil {
+		return nil, fmt.Errorf("error getting last insert ID: %w", err)
+	}
+
+	return d.GetReminderById(int(lastInsertID))
 }
 
 func (d *DB) GetReminderById(id int) (*Reminder, error) {
-	query := "SELECT id, title FROM reminders WHERE id = ?;"
+	query := "SELECT id, title, chat_id FROM reminders WHERE id = ?;"
 	var reminder Reminder
 
-	err := d.instance.QueryRow(query, id).Scan(&reminder.ID, &reminder.Title)
+	err := d.instance.QueryRow(query, id).Scan(&reminder.ID, &reminder.Title, &reminder.ChatID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("no reminder found with id %d", id)
