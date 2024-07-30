@@ -15,6 +15,7 @@ import (
 
 const (
 	RemindCommand = "/r"
+	StartCommand  = "/start"
 )
 
 func main() {
@@ -29,48 +30,55 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error creating bot: %v", err)
 	}
-	u := tgbotapi.NewUpdate(0)
-	// debug logs
-	// bot.Debug = true
 
+	u := tgbotapi.NewUpdate(0)
 	updates, err := bot.GetUpdatesChan(u)
 	if err != nil {
 		log.Fatalf("Error getting updates: %v", err)
+	}
+
+	redisInstance, err := StartRedis(dbInstance, bot)
+	if err != nil {
+		log.Fatalf("Error connecting to Redis: %v", err)
+		return
 	}
 
 	for update := range updates {
 		isValidCommand := strings.HasPrefix(update.Message.Text, RemindCommand)
 		if !isValidCommand {
 			fmt.Println("Error. Invalid message")
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "The only command to use for now is '/r' to set a reminder. The message you sent is not valid.") // bold message --> '/r'
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "The only command to use for now is '/r' to set a reminder. The message you sent is not valid.")
 			_, err := bot.Send(msg)
 			if err != nil {
-				log.Printf("Error sending message: %v", err)
+				panic("Error trying to send message: " + err.Error())
 			}
 		} else {
-			fmt.Println("New message: " + update.Message.Text)
-			title, notifyTime, err := ParseMessage(update.Message.Text)
+			title, notifyTime, duration, err := ParseMessage(update.Message.Text)
 			if err != nil {
-				fmt.Println("Error:", err)
-				return
+				panic("Error trying to parse message: " + err.Error())
 			}
 
 			if update.Message == nil { // Ignore any non-Message updates.
 				continue
 			}
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "New message: "+title)
-			err = dbInstance.InsertNewReminder(title, notifyTime)
+
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Reminder setted: '"+title+"'")
+			result, err := dbInstance.InsertNewReminder(title, notifyTime, update.Message.Chat.ID)
 			if err != nil {
-				panic(err)
+				panic("Error trying to insert new reminder in db: " + err.Error())
 			}
+
+			err = redisInstance.Set(strconv.Itoa(result.ID), "", duration)
+			if err != nil {
+				panic("Error setting value in Redis:" + err.Error())
+			}
+
 			_, err = bot.Send(msg)
 			if err != nil {
-				log.Printf("Error sending message: %v", err)
+				panic("Error trying to send message: " + err.Error())
 			}
 		}
-
 	}
-
 }
 
 func GetEnv(key string) string {
@@ -87,36 +95,39 @@ func GetEnv(key string) string {
 	return token
 }
 
-func ParseMessage(message string) (text string, notifyTime time.Time, err error) {
-	re := regexp.MustCompile(`/r\s+"(.*?)"\s+en\s+"(.*?)"`)
+func ParseMessage(message string) (text string, notifyTime time.Time, duration time.Duration, err error) {
+	re := regexp.MustCompile(`/r\s+"(.*?)"\s+in\s+"(.*?)"`)
 	matches := re.FindStringSubmatch(message)
 
 	if len(matches) < 3 {
-		fmt.Println("Matches:", matches) // Debug print
-		return "", time.Time{}, fmt.Errorf("invalid message format")
+		fmt.Println("Matches:", matches)
+		return "", time.Time{}, 0, fmt.Errorf("invalid message format")
 	}
 
 	text = matches[1]
-
 	durationStr := matches[2]
 	durationStr = strings.TrimSpace(durationStr)
 
-	var duration time.Duration
 	if strings.HasSuffix(durationStr, "h") {
 		hours, err := strconv.Atoi(strings.TrimSuffix(durationStr, "h"))
 		if err != nil {
-			return "", time.Time{}, fmt.Errorf("error parsing hours: %w", err)
+			return "", time.Time{}, 0, fmt.Errorf("error parsing hours: %w", err)
 		}
 		duration = time.Duration(hours) * time.Hour
 	} else if strings.HasSuffix(durationStr, "m") {
 		minutes, err := strconv.Atoi(strings.TrimSuffix(durationStr, "m"))
 		if err != nil {
-			return "", time.Time{}, fmt.Errorf("error parsing minutes: %w", err)
+			return "", time.Time{}, 0, fmt.Errorf("error parsing minutes: %w", err)
 		}
 		duration = time.Duration(minutes) * time.Minute
-		// TODO: parse to seconds
+	} else if strings.HasSuffix(durationStr, "s") {
+		seconds, err := strconv.Atoi(strings.TrimSuffix(durationStr, "s"))
+		if err != nil {
+			return "", time.Time{}, 0, fmt.Errorf("error parsing seconds: %w", err)
+		}
+		duration = time.Duration(seconds) * time.Second
 	} else {
-		return "", time.Time{}, fmt.Errorf("invalid duration format")
+		return "", time.Time{}, 0, fmt.Errorf("invalid duration format")
 	}
 
 	notifyTime = time.Now().Add(duration)
@@ -129,12 +140,14 @@ func ParseMessage(message string) (text string, notifyTime time.Time, err error)
 	textMessage := text[index+len(RemindCommand):]
 	textMessage = strings.TrimSpace(textMessage)
 
-	return textMessage, notifyTime, nil
+	return textMessage, notifyTime, duration, nil
 }
 
-// TODO: FIND REDIS KEY BY MESSAGE ID
-/*result, err := dbInstance.GetReminderById(1)
-if err != nil {
-	fmt.Println("Error:", err)
-	return
-}*/
+func SendTelegramMessage(bot *tgbotapi.BotAPI, chatID int64, message string) error {
+	msg := tgbotapi.NewMessage(chatID, message)
+	_, err := bot.Send(msg)
+	if err != nil {
+		return fmt.Errorf("error sending message: %w", err)
+	}
+	return nil
+}
