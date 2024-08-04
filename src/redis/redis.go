@@ -1,15 +1,15 @@
-package main
+package redis
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
+	"remind_me/src/db"
+	"remind_me/src/utils"
 	"strconv"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -17,10 +17,10 @@ type Redis struct {
 	instance *redis.Client
 }
 
-func StartRedis(dbInstance *DB, bot *tgbotapi.BotAPI) (*Redis, error) {
+func StartRedis(dbInstance *db.DB, SendTelegramMessage func(chatID int64, message string) error) (*Redis, error) {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
+		Addr:     utils.GetEnv("REDIS_HOST"),
+		Password: utils.GetEnv("REDIS_PASSWORD"),
 		DB:       0,
 	})
 	_, err := client.Do(context.Background(), "CONFIG", "SET", "notify-keyspace-events", "KEA").Result()
@@ -53,22 +53,14 @@ func StartRedis(dbInstance *DB, bot *tgbotapi.BotAPI) (*Redis, error) {
 
 				result, err := dbInstance.GetReminderById(expiredKeyInt)
 				if err != nil {
-					fmt.Println("Error:", err)
-					return
+					panic("error trying to get reminder from db: " + err.Error())
 				}
 
-				resultJSON, err := json.MarshalIndent(result, "", "  ")
-				if err != nil {
-					log.Fatalf("Error marshaling result to JSON: %v", err)
-				}
-
-				// logger
-				fmt.Println(string(resultJSON))
 				message := fmt.Sprintf("Reminder:  '%s' has expired", result.Title)
-				err = SendTelegramMessage(bot, result.ChatID, message)
+				utils.SuccessLog("Message sent!")
+				err = SendTelegramMessage(result.ChatID, message)
 				if err != nil {
-					fmt.Println("Error sending message:", err)
-					return
+					panic("error trying to send message: " + err.Error())
 				}
 			}
 		}
@@ -78,7 +70,7 @@ func StartRedis(dbInstance *DB, bot *tgbotapi.BotAPI) (*Redis, error) {
 	if err != nil {
 		log.Fatal("Error connecting to Redis:", err)
 	}
-	fmt.Println("\033[32m- Successful connection to Redis\033[0m")
+	utils.SuccessLog("Successful connection to Redis")
 
 	return &Redis{instance: client}, nil
 }

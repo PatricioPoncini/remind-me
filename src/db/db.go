@@ -1,9 +1,10 @@
-package main
+package db
 
 import (
 	"database/sql"
 	"fmt"
 	"log"
+	"remind_me/src/utils"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -32,12 +33,12 @@ func NewDB(dataSourceName string) (*DB, error) {
 		return nil, fmt.Errorf("error pinging database: %v", err)
 	}
 
-	fmt.Println("\033[32m- Successful connection to database\033[0m")
+	utils.SuccessLog("Successful connection to database")
 
 	return &DB{instance: db}, nil
 }
 
-func (d *DB) checkInitialConditions() {
+func (d *DB) CheckInitialConditions() {
 	createTableSQL := `
     CREATE TABLE IF NOT EXISTS reminders (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -54,15 +55,7 @@ func (d *DB) checkInitialConditions() {
 		return
 	}
 
-	fmt.Println("\033[32m- Initial conditions checked\033[0m")
-}
-
-func (d *DB) GetInstance() *sql.DB {
-	return d.instance
-}
-
-func (d *DB) Close() error {
-	return d.instance.Close()
+	utils.SuccessLog("Initial conditions checked")
 }
 
 func (d *DB) InsertNewReminder(text string, timestamp time.Time, chatId int64) (*Reminder, error) {
