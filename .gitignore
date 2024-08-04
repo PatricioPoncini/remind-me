@@ -15,10 +15,6 @@
 .go_workspace
 .go_workspace.tmp
 
-# Go modules
-go.sum
-go.mod
-
 # IDE/editor directories
 .vscode/
 .idea/
