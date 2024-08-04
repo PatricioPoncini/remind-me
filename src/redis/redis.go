@@ -19,8 +19,8 @@ type Redis struct {
 
 func StartRedis(dbInstance *db.DB, SendTelegramMessage func(chatID int64, message string) error) (*Redis, error) {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
+		Addr:     utils.GetEnv("REDIS_HOST"),
+		Password: utils.GetEnv("REDIS_PASSWORD"),
 		DB:       0,
 	})
 	_, err := client.Do(context.Background(), "CONFIG", "SET", "notify-keyspace-events", "KEA").Result()
@@ -57,6 +57,7 @@ func StartRedis(dbInstance *db.DB, SendTelegramMessage func(chatID int64, messag
 				}
 
 				message := fmt.Sprintf("Reminder:  '%s' has expired", result.Title)
+				utils.SuccessLog("Message sent!")
 				err = SendTelegramMessage(result.ChatID, message)
 				if err != nil {
 					panic("error trying to send message: " + err.Error())
