@@ -1,4 +1,4 @@
-package main
+package redis
 
 import (
 	"context"
@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"remind_me/src/db"
 	"strconv"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -17,7 +17,7 @@ type Redis struct {
 	instance *redis.Client
 }
 
-func StartRedis(dbInstance *DB, bot *tgbotapi.BotAPI) (*Redis, error) {
+func StartRedis(dbInstance *db.DB, SendTelegramMessage func(chatID int64, message string) error) (*Redis, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "",
@@ -62,10 +62,9 @@ func StartRedis(dbInstance *DB, bot *tgbotapi.BotAPI) (*Redis, error) {
 					log.Fatalf("Error marshaling result to JSON: %v", err)
 				}
 
-				// logger
 				fmt.Println(string(resultJSON))
 				message := fmt.Sprintf("Reminder:  '%s' has expired", result.Title)
-				err = SendTelegramMessage(bot, result.ChatID, message)
+				err = SendTelegramMessage(result.ChatID, message)
 				if err != nil {
 					fmt.Println("Error sending message:", err)
 					return

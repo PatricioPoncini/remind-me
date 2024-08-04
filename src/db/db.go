@@ -1,4 +1,4 @@
-package main
+package db
 
 import (
 	"database/sql"
@@ -37,7 +37,7 @@ func NewDB(dataSourceName string) (*DB, error) {
 	return &DB{instance: db}, nil
 }
 
-func (d *DB) checkInitialConditions() {
+func (d *DB) CheckInitialConditions() {
 	createTableSQL := `
     CREATE TABLE IF NOT EXISTS reminders (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -55,10 +55,6 @@ func (d *DB) checkInitialConditions() {
 	}
 
 	fmt.Println("\033[32m- Initial conditions checked\033[0m")
-}
-
-func (d *DB) GetInstance() *sql.DB {
-	return d.instance
 }
 
 func (d *DB) Close() error {
