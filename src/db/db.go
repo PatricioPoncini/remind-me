@@ -22,7 +22,6 @@ type Reminder struct {
 	CreatedAt  time.Time  `json:"created_at"`
 }
 
-// TODO: function to create database if not exist
 func NewDB(dataSourceName string) (*DB, error) {
 	db, err := sql.Open("mysql", dataSourceName)
 	if err != nil {
