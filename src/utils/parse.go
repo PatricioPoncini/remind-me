@@ -18,13 +18,11 @@ func ParseMessage(message string) (text string, notifyTime time.Time, duration t
 	matches := re.FindStringSubmatch(message)
 
 	if len(matches) < 3 {
-		fmt.Println("Matches:", matches)
-		return "", time.Time{}, 0, fmt.Errorf("invalid message format")
+		return "", time.Time{}, 0, fmt.Errorf("invalid message format. no matches")
 	}
 
-	text = matches[1]
-	durationStr := matches[2]
-	durationStr = strings.TrimSpace(durationStr)
+	text = strings.TrimSpace(matches[1])
+	durationStr := strings.TrimSpace(matches[2])
 
 	if strings.HasSuffix(durationStr, "h") {
 		hours, err := strconv.Atoi(strings.TrimSuffix(durationStr, "h"))
@@ -49,15 +47,5 @@ func ParseMessage(message string) (text string, notifyTime time.Time, duration t
 	}
 
 	notifyTime = time.Now().Add(duration)
-
-	index := strings.Index(text, RemindCommand)
-	if index == -1 {
-		fmt.Println("Command not found in text.")
-		return
-	}
-	fmt.Println("a")
-	textMessage := text[index+len(RemindCommand):]
-	textMessage = strings.TrimSpace(textMessage)
-
-	return textMessage, notifyTime, duration, nil
+	return text, notifyTime, duration, nil
 }

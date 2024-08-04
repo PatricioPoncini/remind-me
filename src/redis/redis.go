@@ -2,11 +2,11 @@ package redis
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"remind_me/src/db"
+	"remind_me/src/utils"
 	"strconv"
 	"time"
 
@@ -53,21 +53,13 @@ func StartRedis(dbInstance *db.DB, SendTelegramMessage func(chatID int64, messag
 
 				result, err := dbInstance.GetReminderById(expiredKeyInt)
 				if err != nil {
-					fmt.Println("Error:", err)
-					return
+					panic("error trying to get reminder from db: " + err.Error())
 				}
 
-				resultJSON, err := json.MarshalIndent(result, "", "  ")
-				if err != nil {
-					log.Fatalf("Error marshaling result to JSON: %v", err)
-				}
-
-				fmt.Println(string(resultJSON))
 				message := fmt.Sprintf("Reminder:  '%s' has expired", result.Title)
 				err = SendTelegramMessage(result.ChatID, message)
 				if err != nil {
-					fmt.Println("Error sending message:", err)
-					return
+					panic("error trying to send message: " + err.Error())
 				}
 			}
 		}
@@ -77,7 +69,7 @@ func StartRedis(dbInstance *db.DB, SendTelegramMessage func(chatID int64, messag
 	if err != nil {
 		log.Fatal("Error connecting to Redis:", err)
 	}
-	fmt.Println("\033[32m- Successful connection to Redis\033[0m")
+	utils.SuccessLog("Successful connection to Redis")
 
 	return &Redis{instance: client}, nil
 }
