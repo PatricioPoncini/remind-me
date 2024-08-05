@@ -1,10 +1,10 @@
 # `remind-me`
 
-## `-- About --`
+## `About`
 
 `remind-me` is a Telegram bot designed to set reminders for short periods of time, such as seconds, minutes, and hours.
 
-## `-- Tech stack-- `
+## `Tech stack`
 
 [![](https://skillicons.dev/icons?i=go,mysql,redis)](https://skillicons.dev)
 
