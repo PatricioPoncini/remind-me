@@ -14,7 +14,7 @@ const (
 )
 
 func ParseMessage(message string) (text string, notifyTime time.Time, duration time.Duration, err error) {
-	re := regexp.MustCompile(`/r\s+"(.*?)"\s+in\s+"(.*?)"`)
+	re := regexp.MustCompile(`/r\s+'(.*?)'\s+in\s+'(.*?)'`)
 	matches := re.FindStringSubmatch(message)
 
 	if len(matches) < 3 {

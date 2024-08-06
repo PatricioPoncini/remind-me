@@ -35,14 +35,10 @@ func (tb *TelegramBot) Start(dbInstance *db.DB, redisInstance *redis.Redis) {
 		utils.InfoLog("New incoming message")
 		isStartCommand := strings.HasPrefix(update.Message.Text, utils.StartCommand)
 		if isStartCommand {
-			utils.SuccessLog("Start command info")
-			originalText := "Hello, I am Alfred, and I will be in charge of your reminders. To use me, simply enter a command like this: <code>/r 'reminder title here' in 'time'</code>. The <code>time</code> can be expressed in seconds, minutes, or hours, with <code>s</code> for seconds, <code>m</code> for minutes, and <code>h</code> for hours. For example: <code>/r 'hi' in '5s'</code> will send a notification in this chat after 5 seconds to remind you."
-
-			// Reemplazar las comillas simples por comillas dobles
-			replacedText := strings.ReplaceAll(originalText, "'", "\"")
-
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, replacedText)
-			msg.ParseMode = "HTML"
+			utils.SuccessLog("Start command")
+			originalText := "Hi! 👋 *I'm Alfred* 🧐 and I will be in charge of your reminders 🤖 To use me, simply enter a command like this: \n\n`/r 'reminder title here' in 'time'` \n\nThe `time` can be expressed in seconds, minutes, or hours, with `s` for seconds, `m` for minutes, and `h` for hours. \n\n_For example:_ `/r 'hi' in '5s'` will send a notification in this chat after 5 seconds to remind you. \n\nIf you don't remember how to write the command to set a reminder, simply use the `/start` command and this text will reappear 😊"
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, originalText)
+			msg.ParseMode = "Markdown"
 
 			_, err := tb.instance.Send(msg)
 			if err != nil {
@@ -53,13 +49,14 @@ func (tb *TelegramBot) Start(dbInstance *db.DB, redisInstance *redis.Redis) {
 			title, notifyTime, duration, err := utils.ParseMessage(update.Message.Text)
 			if !isValidCommand || err != nil {
 				utils.ErrorLog("Error. Invalid command")
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "The only command to use for now is '/r' to set a reminder. The message you sent is not valid.")
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "😢 Oh, it seems that the message you sent is not valid. The only command to use for now is `/r` to set a reminder. Please try again.")
+				msg.ParseMode = "Markdown"
 				_, err := tb.instance.Send(msg)
 				if err != nil {
 					panic("Error trying to send message: " + err.Error())
 				}
 			} else {
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Reminder set:  '"+title+"'")
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "✅ Reminder set: '"+title+"'")
 				result, err := dbInstance.InsertNewReminder(title, notifyTime, update.Message.Chat.ID)
 				if err != nil {
 					utils.ErrorLog("Error trying to insert new reminder in db: " + err.Error())
@@ -84,6 +81,7 @@ func (tb *TelegramBot) Start(dbInstance *db.DB, redisInstance *redis.Redis) {
 
 func (tb *TelegramBot) SendTelegramMessage(chatID int64, message string) error {
 	msg := tgbotapi.NewMessage(chatID, message)
+	msg.ParseMode = "Markdown"
 	_, err := tb.instance.Send(msg)
 	if err != nil {
 		return fmt.Errorf("error sending message: %w", err)
