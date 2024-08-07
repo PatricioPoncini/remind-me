@@ -56,7 +56,7 @@ func StartRedis(dbInstance *db.DB, SendTelegramMessage func(chatID int64, messag
 					panic("error trying to get reminder from db: " + err.Error())
 				}
 
-				message := fmt.Sprintf("Reminder:  '%s' has expired", result.Title)
+				message := fmt.Sprintf("⏰ *Reminder:* '%s' has expired!", result.Title)
 				utils.SuccessLog("Message sent!")
 				err = SendTelegramMessage(result.ChatID, message)
 				if err != nil {
