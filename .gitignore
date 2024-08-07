@@ -1,0 +1,33 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Build output
+/bin/
+/obj/
+
+# Go workspace files
+.go_workspace
+.go_workspace.tmp
+
+# IDE/editor directories
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Environment files
+.env
+
+# Logs
+*.log
+
+# Miscellaneous
+*.tmp
+*.swp
+.DS_Store
