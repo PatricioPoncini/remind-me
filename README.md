@@ -1,4 +1,5 @@
 # `Remind Me`
+
 <img src="https://res.cloudinary.com/dxsrkhb6k/image/upload/v1723937523/ztjn3rcbypsjvt29x1wa.jpg" width="800" height="550" />
 
 ## `About 📜`
@@ -6,6 +7,10 @@
 `remind-me` is a Telegram bot designed to set reminders for short periods of time, such as seconds, minutes, and hours.
 
 Developing this bot came from my desire to get better at Go since I'm still new to the language. I combined it with Redis and MySQL to build a bot for short-term reminders.
+
+## `Try it for yourself! 😉`
+
+Check out the bot here: [Remind Me Alfred Bot](https://t.me/remind_me_please_alfred_bot)
 
 ## `Tech stack 🔧`
 
