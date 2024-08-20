@@ -32,7 +32,7 @@ func (tb *TelegramBot) Start(dbInstance *db.DB, redisInstance *redis.Redis) {
 	}
 
 	for update := range updates {
-		utils.InfoLog("New incoming message")
+		utils.InfoLog("New incoming message: " + update.Message.Text)
 		isStartCommand := strings.HasPrefix(update.Message.Text, utils.StartCommand)
 		if isStartCommand {
 			utils.SuccessLog("Start command")
@@ -48,7 +48,7 @@ func (tb *TelegramBot) Start(dbInstance *db.DB, redisInstance *redis.Redis) {
 			isValidCommand := strings.HasPrefix(update.Message.Text, utils.RemindCommand)
 			title, notifyTime, duration, err := utils.ParseMessage(update.Message.Text)
 			if !isValidCommand || err != nil {
-				utils.ErrorLog("Error. Invalid command")
+				utils.ErrorLog("Error. Invalid command: " + update.Message.Text)
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "😢 Oh, it seems that the message you sent is not valid. The only command to use for now is `/r` to set a reminder. Please try again.")
 				msg.ParseMode = "Markdown"
 				_, err := tb.instance.Send(msg)

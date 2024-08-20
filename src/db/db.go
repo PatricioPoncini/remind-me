@@ -43,7 +43,7 @@ func (d *DB) CheckInitialConditions() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         title VARCHAR(100) NOT NULL,
 		expiration TIMESTAMP NOT NULL,
-		chat_id INT NOT NULL,
+		chat_id BIGINT UNSIGNED NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     `
